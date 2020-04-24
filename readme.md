@@ -8,7 +8,7 @@ You will be notified a minute before lockdown :
 
 <img src="https://bnobo.github.io/needabreak/Captures/imminent_lockdown.jpg" alt="imminent lockdown" width="300" />
 
-When it is time to have a break a countdown will appear :
+When it is time to have a break a countdown will appear. The screen will be locked when it reaches 0 :
 
 <img src="https://bnobo.github.io/needabreak/Captures/mainwindow.gif" alt="countdown" width="600" />
 

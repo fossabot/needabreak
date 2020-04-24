@@ -27,6 +27,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using NeedABreak.Utils;
 
 namespace NeedABreak
 {
@@ -35,15 +36,30 @@ namespace NeedABreak
     /// </summary>
     public partial class MainWindow : MetroWindow
     {
-        [DllImport("user32.dll")]
-        public static extern bool LockWorkStation();
+       
 
         public MainWindow()
         {
             App.Logger.Debug("MainWindow ctor start");
             InitializeComponent();
             LoadRegistryConfig();
+            ExecuteFirstRunActions();
             App.Logger.Debug("MainWindow ctor end");
+        }
+
+        private void ExecuteFirstRunActions()
+        {
+            App.Logger.DebugFormat("IsFirstRun = {0}",
+                            Properties.Settings.Default.IsFirstRun);
+
+            if (Properties.Settings.Default.IsFirstRun)
+            {
+                // Setting IsChecked to true will raise Checked event
+                LaunchOnStartupMenuItem.IsChecked = true;
+                // Update IsFirstRun so this code won't execute next time application start
+                Properties.Settings.Default.IsFirstRun = false;
+                Properties.Settings.Default.Save();
+            }            
         }
 
         private void LoadRegistryConfig()
@@ -140,7 +156,7 @@ namespace NeedABreak
             }
 
             Hide();
-            LockWorkStation();
+            SessionLock.LockSession();
             _imminentLocking = false;
         }
 
@@ -263,5 +279,11 @@ namespace NeedABreak
 			Interlocked.Exchange(ref _cancellationTokenSource, new CancellationTokenSource()).Cancel();
 			App.InitStartTime();
 		}
+
+        private void LockButton_Click(object sender, RoutedEventArgs e)
+        {
+            Interlocked.Exchange(ref _cancellationTokenSource, new CancellationTokenSource()).Cancel();
+            SessionLock.LockSession();
+        }
     }
 }
