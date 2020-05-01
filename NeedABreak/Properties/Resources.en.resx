@@ -109,12 +109,18 @@
     <value>Countdown before lockdown resumed</value>
   </data>
   <data name="resumed_title" xml:space="preserve">
-    <value>App resumed</value>
+    <value>NEED A BREAK! resumed</value>
   </data>
   <data name="suspended_message" xml:space="preserve">
     <value>Countdown before lock paused</value>
   </data>
   <data name="suspended_title" xml:space="preserve">
-    <value>App suspended</value>
+    <value>NEED A BREAK! suspended</value>
+  </data>
+  <data name="automatic_suspension" xml:space="preserve">
+    <value>Automatic suspension</value>
+  </data>
+  <data name="automatic_suspension_tooltip" xml:space="preserve">
+    <value>The app automatically suspends when it detects that a full-screen app or presentation has started and automatically reactivates when the full-screen app or presentation is complete.</value>
   </data>
 </root>

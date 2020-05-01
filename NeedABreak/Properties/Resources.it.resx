@@ -109,12 +109,18 @@
     <value>Il conto alla rovescia prima del blocco è ripreso</value>
   </data>
   <data name="resumed_title" xml:space="preserve">
-    <value>Ripresa dell'applicazione</value>
+    <value>NEED A BREAK! riattivato</value>
   </data>
   <data name="suspended_message" xml:space="preserve">
     <value>Conto alla rovescia prima del blocco in pausa</value>
   </data>
   <data name="suspended_title" xml:space="preserve">
-    <value>Applicazione sospesa</value>
+    <value>NEED A BREAK! sospeso</value>
+  </data>
+  <data name="automatic_suspension" xml:space="preserve">
+    <value>Sospensione automatica</value>
+  </data>
+  <data name="automatic_suspension_tooltip" xml:space="preserve">
+    <value>L'app viene sospesa automaticamente quando rileva che un'app o una presentazione a schermo intero è stata avviata e viene riattivata automaticamente al termine dell'app o della presentazione a schermo intero.</value>
   </data>
 </root>

@@ -143,16 +143,24 @@
           <target state="translated">Countdown before lockdown resumed</target>
         </trans-unit>
         <trans-unit id="resumed_title" translate="yes" xml:space="preserve">
-          <source>Application reprise</source>
-          <target state="translated">App resumed</target>
+          <source>NEED A BREAK! réactivé</source>
+          <target state="translated">NEED A BREAK! resumed</target>
         </trans-unit>
         <trans-unit id="suspended_message" translate="yes" xml:space="preserve">
           <source>Décompte avant verrouillage mis en pause</source>
           <target state="translated">Countdown before lock paused</target>
         </trans-unit>
         <trans-unit id="suspended_title" translate="yes" xml:space="preserve">
-          <source>Application suspendue</source>
-          <target state="translated">App suspended</target>
+          <source>NEED A BREAK! suspendu</source>
+          <target state="translated">NEED A BREAK! suspended</target>
+        </trans-unit>
+        <trans-unit id="automatic_suspension" translate="yes" xml:space="preserve">
+          <source>Suspension automatique</source>
+          <target state="translated">Automatic suspension</target>
+        </trans-unit>
+        <trans-unit id="automatic_suspension_tooltip" translate="yes" xml:space="preserve">
+          <source>L'application se suspend automatiquement lorsqu'elle détecte qu'une application plein écran ou une présentation a démarré et se réactive automatiquement lorsque l'application plein écran ou la présentation est terminé.</source>
+          <target state="translated">The app automatically suspends when it detects that a full-screen app or presentation has started and automatically reactivates when the full-screen app or presentation is complete.</target>
         </trans-unit>
       </group>
     </body>
