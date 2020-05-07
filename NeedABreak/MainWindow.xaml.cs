@@ -18,16 +18,12 @@
 */
 using MahApps.Metro.Controls;
 using Microsoft.Win32;
-using PropertyChanged;
+using NeedABreak.Utils;
 using System;
-using System.Drawing;
-using System.IO;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using NeedABreak.Utils;
+using System.Windows.Media.Imaging;
 
 namespace NeedABreak
 {
@@ -36,15 +32,19 @@ namespace NeedABreak
     /// </summary>
     public partial class MainWindow : MetroWindow
     {
-       
-
         public MainWindow()
         {
             App.Logger.Debug("MainWindow ctor start");
             InitializeComponent();
             LoadRegistryConfig();
             ExecuteFirstRunActions();
+            LoadUserSettings();
             App.Logger.Debug("MainWindow ctor end");
+        }
+
+        private void LoadUserSettings()
+        {
+            AutomaticSuspensionMenuItem.IsChecked = Properties.Settings.Default.AutomaticSuspension;
         }
 
         private void ExecuteFirstRunActions()
@@ -59,14 +59,14 @@ namespace NeedABreak
                 // Update IsFirstRun so this code won't execute next time application start
                 Properties.Settings.Default.IsFirstRun = false;
                 Properties.Settings.Default.Save();
-            }            
+            }
         }
 
         private void LoadRegistryConfig()
         {
-            RegistryKey run = GetRunRegistryKey(false);
+            RegistryKey run = RegistryTool.GetRunRegistryKey(false);
 
-            ActOnRegistryKey(run, x =>
+            RegistryTool.ActOnRegistryKey(run, x =>
             {
                 string needABreak = (string)run.GetValue("NeedABreak");
 
@@ -82,47 +82,22 @@ namespace NeedABreak
 
         private void LaunchOnStartupMenuItem_Unchecked(object sender, RoutedEventArgs e)
         {
-            RegistryKey run = GetRunRegistryKey(true);
-            ActOnRegistryKey(run, x => x.DeleteValue("NeedABreak"));
+            RegistryKey run = RegistryTool.GetRunRegistryKey(true);
+            RegistryTool.ActOnRegistryKey(run, x => x.DeleteValue("NeedABreak"));
         }
 
         private void LaunchOnStartupMenuItem_Checked(object sender, RoutedEventArgs e)
         {
-            RegistryKey run = GetRunRegistryKey(true);
+            RegistryKey run = RegistryTool.GetRunRegistryKey(true);
 
-            ActOnRegistryKey(run,
+            RegistryTool.ActOnRegistryKey(run,
                 x => x.SetValue("NeedABreak", System.Reflection.Assembly.GetExecutingAssembly().Location));
         }
 
-        /// <summary>
-        /// Check that key is not null then close and dispose it
-        /// </summary>
-        /// <param name="key"></param>
-        /// <param name="action"></param>
-        private static void ActOnRegistryKey(RegistryKey key, Action<RegistryKey> action)
-        {
-            if (key != null)
-            {
-                action(key);
-                key.Close();
-                key.Dispose();
-            }
-        }
-
-        private static RegistryKey GetRunRegistryKey(bool writable)
-        {
-            //var run = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run");
-            //string s = @"Software\Microsoft\Windows\CurrentVersion\Run";
-            //string s = "Software" + '\\' + "Microsoft" + '\\' + "Windows" + '\\' + "CurrentVersion" + '\\' + "Run";
-            //StringBuilder sb = new StringBuilder(@"Software\Microsoft\Windows\CurrentVersion\Run");
-
-            // Not possible to put \ in string because it breaks Fody during build :/
-            return Registry.CurrentUser.OpenSubKey("Software/Microsoft/Windows/CurrentVersion/Run"
-                .Replace('/', '\\'), writable);
-        }
-
+        private const string CoffeeSuspendedUri = "pack://application:,,,/NeedABreak;component/coffee_suspended.ico";
+        private const string CoffeeCupUri = "pack://application:,,,/NeedABreak;component/coffee cup.ico";
         private CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
-		private bool _imminentLocking = false;
+        private bool _imminentLocking = false;
 
         public async Task StartLockWorkStationAsync()
         {
@@ -160,16 +135,15 @@ namespace NeedABreak
             _imminentLocking = false;
         }
 
-		public void ShowBalloonTip()
-		{
-			//uxTaskbarIcon.ShowBalloonTip(Properties.Resources.verrouillage_imminent_title, Properties.Resources.verrouillage_imminent_detail, Hardcodet.Wpf.TaskbarNotification.BalloonIcon.Warning);
-			var template = (DataTemplate)FindResource("BalloonTipTemplate");
-			var balloon = (FrameworkElement)template.LoadContent();
-			balloon.Name = "uxBalloonTip";
-			uxTaskbarIcon.ShowCustomBalloon(balloon, System.Windows.Controls.Primitives.PopupAnimation.Scroll, 10000);
-		}
+        public void ShowCustomBalloon()
+        {
+            var template = (DataTemplate)FindResource("BalloonTipTemplate");
+            var balloon = (FrameworkElement)template.LoadContent();
+            balloon.Name = "uxBalloonTip";
+            uxTaskbarIcon.ShowCustomBalloon(balloon, System.Windows.Controls.Primitives.PopupAnimation.Scroll, 10000);
+        }
 
-		private MainWindowViewModel GetViewModel()
+        public MainWindowViewModel GetViewModel()
         {
             return DataContext as MainWindowViewModel;
         }
@@ -177,34 +151,44 @@ namespace NeedABreak
         private void UpdateToolTip(string text)
         {
             var viewModel = GetViewModel();
+#if DEBUG
+            viewModel.TrayToolTipText = $"[DEBUG] {text}";
+#else
             viewModel.TrayToolTipText = text;
+#endif
         }
 
-		private static void ShowSettingsWindow()
-		{
-			Window settingsWindow = null;
-
-			foreach (Window window in App.Current.Windows)
-			{
-				if (window is SettingsWindow)
-				{
-					settingsWindow = window;
-					break;
-				}
-			}
-
-			if (settingsWindow == null)
-			{
-				settingsWindow = new SettingsWindow();
-				settingsWindow.DataContext = new SettingsWindowViewModel();
-			}
-
-			settingsWindow.Show();
-			settingsWindow.Activate();
-		}
-
-		private void TaskbarIcon_PreviewTrayToolTipOpen(object sender, RoutedEventArgs e)
+        private static void ShowSettingsWindow()
         {
+            Window settingsWindow = null;
+
+            foreach (Window window in App.Current.Windows)
+            {
+                if (window is SettingsWindow)
+                {
+                    settingsWindow = window;
+                    break;
+                }
+            }
+
+            if (settingsWindow == null)
+            {
+                settingsWindow = new SettingsWindow();
+                settingsWindow.DataContext = new SettingsWindowViewModel();
+            }
+
+            settingsWindow.Show();
+            settingsWindow.Activate();
+        }
+
+        private void TaskbarIcon_PreviewTrayToolTipOpen(object sender, RoutedEventArgs e)
+        {
+            if (App.IsSuspended)
+            {
+                UpdateToolTip(Properties.Resources.suspended_title);
+                return;
+            }
+
             if (_imminentLocking)
             {
                 UpdateToolTip(Properties.Resources.Imminent_locking);
@@ -237,9 +221,9 @@ namespace NeedABreak
         }
 
         private void SettingsMenuItem_Click(object sender, RoutedEventArgs e)
-		{
-			ShowSettingsWindow();
-		}
+        {
+            ShowSettingsWindow();
+        }
 
         private Lazy<AboutBoxWindow> aboutBoxFactory =
             new Lazy<AboutBoxWindow>(() => new AboutBoxWindow());
@@ -252,38 +236,111 @@ namespace NeedABreak
         }
 
         private void CloseBalloon_Click(object sender, RoutedEventArgs e)
-		{
-			uxTaskbarIcon.CloseBalloon();
-		}
-		
-		private void ReporterBalloon_Click(object sender, RoutedEventArgs e)
-		{
-			uxTaskbarIcon.CloseBalloon();
-			App.ShiftStartTime();		
-		}
+        {
+            uxTaskbarIcon.CloseBalloon();
+        }
 
-		private void AnnulerBalloon_Click(object sender, RoutedEventArgs e)
-		{
-			uxTaskbarIcon.CloseBalloon();
-			App.InitStartTime();	// annulation, le compte à rebours repart de zéro
-		}
-		
-		private void ReporterButton_Click(object sender, RoutedEventArgs e)
-		{
-			Interlocked.Exchange(ref _cancellationTokenSource, new CancellationTokenSource()).Cancel();
-			App.ShiftStartTime();
-		}
+        private void ReporterBalloon_Click(object sender, RoutedEventArgs e)
+        {
+            uxTaskbarIcon.CloseBalloon();
+            App.ShiftStartTime();
+        }
 
-		private void CancelButton_Click(object sender, RoutedEventArgs e)
-		{
-			Interlocked.Exchange(ref _cancellationTokenSource, new CancellationTokenSource()).Cancel();
-			App.InitStartTime();
-		}
+        private void AnnulerBalloon_Click(object sender, RoutedEventArgs e)
+        {
+            uxTaskbarIcon.CloseBalloon();
+            App.InitStartTime();    // annulation, le compte à rebours repart de zéro
+        }
+
+        private void ReporterButton_Click(object sender, RoutedEventArgs e)
+        {
+            Interlocked.Exchange(ref _cancellationTokenSource, new CancellationTokenSource()).Cancel();
+            App.ShiftStartTime();
+        }
+
+        private void CancelButton_Click(object sender, RoutedEventArgs e)
+        {
+            Interlocked.Exchange(ref _cancellationTokenSource, new CancellationTokenSource()).Cancel();
+            App.InitStartTime();
+        }
 
         private void LockButton_Click(object sender, RoutedEventArgs e)
         {
             Interlocked.Exchange(ref _cancellationTokenSource, new CancellationTokenSource()).Cancel();
             SessionLock.LockSession();
+        }
+
+        private void SuspendResumeMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (App.IsSuspended)
+            {
+                App.Resume();
+            }
+            else
+            {
+                App.Suspend();
+            }
+        }
+
+        public void OnSessionUnlock()
+        {
+            if (App.IsSuspended && App.SuspensionCause == SuspensionCause.Manual)
+            {
+                ShowSuspendBalloonTip();
+            }
+        }
+
+        private void ShowResumeBalloonTip()
+        {
+            uxTaskbarIcon.ShowBalloonTip(
+                Properties.Resources.resumed_title,
+                Properties.Resources.resumed_message,
+                Hardcodet.Wpf.TaskbarNotification.BalloonIcon.None);
+        }
+
+        private void ShowSuspendBalloonTip()
+        {
+            uxTaskbarIcon.ShowBalloonTip(
+                Properties.Resources.suspended_title,
+                Properties.Resources.suspended_message,
+                Hardcodet.Wpf.TaskbarNotification.BalloonIcon.None);
+        }
+
+        public void NotifySuspensionStateChanged()
+        {
+            var viewModel = GetViewModel();
+
+            if (App.IsSuspended)
+            {
+                viewModel.UpdateSuspendResumeMenuItemToResume();
+                ShowSuspendBalloonTip();
+                uxTaskbarIcon.IconSource = new BitmapImage(new Uri(CoffeeSuspendedUri, UriKind.Absolute));
+            }
+            else
+            {
+                viewModel.UpdateSuspendResumeMenuItemToSuspend();
+                ShowResumeBalloonTip();
+                uxTaskbarIcon.IconSource = new BitmapImage(new Uri(CoffeeCupUri, UriKind.Absolute));
+            }
+
+            viewModel.NotifyIsSuspendedChanged();
+        }
+
+        private void AutomaticSuspensionMenuItem_Checked(object sender, RoutedEventArgs e)
+        {
+            Properties.Settings.Default.AutomaticSuspension = true;
+            Properties.Settings.Default.Save();
+        }
+
+        private void AutomaticSuspensionMenuItem_Unchecked(object sender, RoutedEventArgs e)
+        {
+            Properties.Settings.Default.AutomaticSuspension = false;
+            Properties.Settings.Default.Save();
+
+            if (App.IsSuspended && App.SuspensionCause == SuspensionCause.Automatic)
+            {
+                App.Resume(); 
+            }
         }
     }
 }

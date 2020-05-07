@@ -17,23 +17,17 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 using log4net;
+using NeedABreak.Utils;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using System.Timers;
 using System.Windows;
 
-//todo: add a "lock now !" button on the main window
-//todo: add a star button to allow user to select his favorite time frame. The selected time frame will be automatically selected at startup.
-//todo: store time left before screen locking in cas of reboot
-//todo: detect other instances on the same network to synchronize break with friends
-//todo: checkbox to disable balloon tip
-//todo: About box with link to INRS site and license
-//todo: balloon tip to remind user about looking away from screen every 20 minutes (deactivable)
-//todo: postpone delay configuration
 namespace NeedABreak
 {
     /// <summary>
@@ -42,9 +36,15 @@ namespace NeedABreak
     public partial class App : Application
     {
         private static DateTime startTime;
-        private static System.Threading.Mutex mutex;
-		public static int Delay = 5400;      // Seconds	(put a low value here to facilitate debugging)
-		private Timer timer;
+#if !DEBUG
+        private static System.Threading.Mutex mutex; 
+#endif
+        public static int Delay { get; set; } = 5400;      // Seconds	(put a low value here to facilitate debugging)
+        private static Timer timer = Delay > 120 ? new Timer(60000) : new Timer(10000);
+        private static DateTime suspendTime;               // Time when App was suspended
+        public static bool IsSuspended { get; set; }
+
+        public static SuspensionCause SuspensionCause { get; set; }
 
         static App()
         {
@@ -54,26 +54,27 @@ namespace NeedABreak
             ConfigureLog4Net();
         }
 
+        private static void ConfigureLog4Net()
+        {
+            // default log path (can be changed in .config)
+            log4net.GlobalContext.Properties["LogFilePath"] = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "NeedABreak Logs", "needabreak.log");
+            log4net.Config.XmlConfigurator.Configure();
+            Logger = LogManager.GetLogger(typeof(App));
+        }
+
         public App()
         {
-            Logger.Debug("App ctor start");
+#if !DEBUG
             mutex = new System.Threading.Mutex(false, "Local\\NeedABreakInstance");
             if (!mutex.WaitOne(0, false))
             {
                 Logger.Info("Application already running");
                 Current.Shutdown();
                 return;
-            }
+            } 
+#endif
             InitializeComponent();
-            InitStartTime();
-            if (Delay > 120)
-            {
-                timer = new Timer(60000);
-            }
-            else
-            {	// timer every 10 secondes to facilitate debug when delay is less than 2 minutes, caveat : it breaks countdown (reinit each second)
-                timer = new Timer(10000);
-            }
+            InitStartTime();            
             timer.Elapsed += Timer_Elapsed;
             timer.Start();
             Microsoft.Win32.SystemEvents.SessionSwitch += SystemEvents_SessionSwitch;
@@ -84,30 +85,76 @@ namespace NeedABreak
 
         private async void Timer_Elapsed(object sender, ElapsedEventArgs e)
         {
+            if (IsSuspended && SuspensionCause == SuspensionCause.Manual)
+            {
+                // App was manually suspended, only user can unsuspend it
+                return;
+            }
+
+            if (NeedABreak.Properties.Settings.Default.AutomaticSuspension)
+            {
+                UserNotificationState state = QueryUserNotificationState.GetState();
+
+                if (IsSuspended)
+                {
+                    // App was automatically suspended, shall we unsuspend it ?
+                    if (state == UserNotificationState.AcceptsNotifications)
+                    {
+                        Resume();
+                    }
+                    else
+                    {
+                        return;
+                    }
+                }
+                else
+                {
+                    // App is not suspended, shall we automatically suspend it ?
+                    switch (state)
+                    {
+                        case UserNotificationState.Busy:
+                        case UserNotificationState.RunningDirect3dFullScreen:
+                        case UserNotificationState.PresentationMode:
+                            Suspend(SuspensionCause.Automatic);
+                            return;
+                    }
+                } 
+            }
+
             double minutesLeft = GetMinutesLeft();
 
             if (minutesLeft <= 0)
             {
-                if (Delay <= 0)
-                {
-                    timer.Stop();
-                }
-
-                await Current.Dispatcher.InvokeAsync(async () =>
-                {
-                    var mainWindow = GetMainWindow();
-                    await mainWindow.StartLockWorkStationAsync()
-                        .ConfigureAwait(false);
-                });
+                await TimesUp();
             }
-			else if (minutesLeft <= 1)
-			{
-				await Current.Dispatcher.InvokeAsync(() =>
-				{
-					var mainWindow = GetMainWindow();
-					mainWindow.ShowBalloonTip();
-				});
-			}
+            else if (minutesLeft <= 1)
+            {
+                await TimesAlmostUp();
+            }
+        }
+
+        private static async Task TimesUp()
+        {
+            if (Delay <= 0)
+            {
+                timer.Stop();
+            }
+
+            await Current.Dispatcher.InvokeAsync(async () =>
+            {
+                var mainWindow = GetMainWindow();
+                await mainWindow.StartLockWorkStationAsync()
+                    .ConfigureAwait(false);
+            });
+        }
+
+        private static async Task TimesAlmostUp()
+        {
+            await Current.Dispatcher.InvokeAsync(() =>
+            {
+                var mainWindow = GetMainWindow();
+                mainWindow.ShowCustomBalloon();
+            });
         }
 
         public static double GetMinutesLeft()
@@ -126,7 +173,14 @@ namespace NeedABreak
         {
             if (e.Reason == Microsoft.Win32.SessionSwitchReason.SessionUnlock)
             {
-                InitStartTime();
+                var mainWindow = GetMainWindow();
+                mainWindow.OnSessionUnlock();
+
+                if (!IsSuspended)
+                {
+                    InitStartTime();
+                }
+                
                 timer.Start();
             }
             else if (e.Reason == Microsoft.Win32.SessionSwitchReason.SessionLock)
@@ -140,17 +194,35 @@ namespace NeedABreak
             startTime = DateTime.UtcNow;
         }
 
-		internal static void ShiftStartTime()
-		{
-			startTime += TimeSpan.FromMinutes(5);		// 5 minutes time skew which delay lock time to 5 minutes (Delay modification is forbidden)
-		}
-
-        private static void ConfigureLog4Net()
+        internal static void ShiftStartTime()
         {
-            // default log path (can be changed in .config)
-            log4net.GlobalContext.Properties["LogFilePath"] = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "NeedABreak Logs", "needabreak.log");
-            log4net.Config.XmlConfigurator.Configure();
-            Logger = LogManager.GetLogger(typeof(App));
+            startTime += TimeSpan.FromMinutes(5);       // 5 minutes time skew which delay lock time to 5 minutes (Delay modification is forbidden)
+        }
+
+        internal static void Suspend(SuspensionCause suspensionCause = SuspensionCause.Manual)
+        {
+            suspendTime = DateTime.UtcNow;
+            IsSuspended = true;
+            SuspensionCause = suspensionCause;
+            NotifySuspensionStateChanged();
+        }
+
+        internal static void Resume()
+        {
+            var elapsedTime = (suspendTime - startTime).TotalMinutes;
+            startTime = DateTime.UtcNow.AddMinutes(-elapsedTime);
+            IsSuspended = false;
+            SuspensionCause = SuspensionCause.Undefined;
+            NotifySuspensionStateChanged();
+        }
+
+        private static void NotifySuspensionStateChanged()
+        {
+            Current.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                var mainWindow = GetMainWindow();
+                mainWindow.NotifySuspensionStateChanged();
+            }));
         }
     }
 }

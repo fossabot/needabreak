@@ -93,4 +93,34 @@
   <data name="lock_now" xml:space="preserve">
     <value>Blocca ora</value>
   </data>
+  <data name="resume" xml:space="preserve">
+    <value>Riprendere</value>
+  </data>
+  <data name="suspend" xml:space="preserve">
+    <value>Sospendere</value>
+  </data>
+  <data name="resume_tooltip" xml:space="preserve">
+    <value>Riprendi di nuovo il conteggio. Il conto alla rovescia pre-blocco riprenderà dal punto in cui era stato interrotto.</value>
+  </data>
+  <data name="suspend_tooltip" xml:space="preserve">
+    <value>Sospendere l'app. Il conto alla rovescia prima del blocco verrà messo in pausa.</value>
+  </data>
+  <data name="resumed_message" xml:space="preserve">
+    <value>Il conto alla rovescia prima del blocco è ripreso</value>
+  </data>
+  <data name="resumed_title" xml:space="preserve">
+    <value>NEED A BREAK! riattivato</value>
+  </data>
+  <data name="suspended_message" xml:space="preserve">
+    <value>Conto alla rovescia prima del blocco in pausa</value>
+  </data>
+  <data name="suspended_title" xml:space="preserve">
+    <value>NEED A BREAK! sospeso</value>
+  </data>
+  <data name="automatic_suspension" xml:space="preserve">
+    <value>Sospensione automatica</value>
+  </data>
+  <data name="automatic_suspension_tooltip" xml:space="preserve">
+    <value>L'app viene sospesa automaticamente quando rileva che un'app o una presentazione a schermo intero è stata avviata e viene riattivata automaticamente al termine dell'app o della presentazione a schermo intero.</value>
+  </data>
 </root>
