@@ -22,7 +22,7 @@
     <value>Run at startup</value>
   </data>
   <data name="explications" xml:space="preserve">
-    <value>When working on a screen, it is important to take frequent screen breaks based on your work hours. Choose the appropriate work duration</value>
+    <value>Run at startup</value>
   </data>
   <data name="fermer" xml:space="preserve">
     <value>Close</value>
@@ -103,7 +103,7 @@
     <value>Resume counting. The countdown before locking will resume where it left off.</value>
   </data>
   <data name="suspend_tooltip" xml:space="preserve">
-    <value>Suspend the app. The countdown before locking will be paused.</value>
+    <value>Suspend the app. The countdown before locking will be suspended.</value>
   </data>
   <data name="resumed_message" xml:space="preserve">
     <value>Countdown before lockdown resumed</value>
@@ -112,7 +112,7 @@
     <value>NEED A BREAK! resumed</value>
   </data>
   <data name="suspended_message" xml:space="preserve">
-    <value>Countdown before lock paused</value>
+    <value>Countdown before lock suspended</value>
   </data>
   <data name="suspended_title" xml:space="preserve">
     <value>NEED A BREAK! suspended</value>

@@ -313,7 +313,7 @@ namespace NeedABreak.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Suspendre l&apos;application. Le décompte avant verrouillage sera mis en pause..
+        ///   Looks up a localized string similar to Suspendre l&apos;application. Le décompte avant verrouillage sera suspendu..
         /// </summary>
         internal static string suspend_tooltip {
             get {
@@ -322,7 +322,7 @@ namespace NeedABreak.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Décompte avant verrouillage mis en pause.
+        ///   Looks up a localized string similar to Décompte avant verrouillage suspendu.
         /// </summary>
         internal static string suspended_message {
             get {
