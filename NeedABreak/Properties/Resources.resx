@@ -234,10 +234,4 @@
   <data name="automatic_suspension_tooltip" xml:space="preserve">
     <value>L'application se suspend automatiquement lorsqu'elle détecte qu'une application plein écran ou une présentation a démarré et se réactive automatiquement lorsque l'application plein écran ou la présentation est terminé.</value>
   </data>
-  <data name="automatic_suspension" xml:space="preserve">
-    <value>Suspension automatique</value>
-  </data>
-  <data name="automatic_suspension_tooltip" xml:space="preserve">
-    <value>L'application se suspend automatiquement lorsqu'elle détecte qu'une application plein écran ou une présentation a démarré et se réactive automatiquement lorsque l'application plein écran ou la présentation est terminé.</value>
-  </data>
 </root>
